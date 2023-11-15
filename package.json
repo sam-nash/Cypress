@@ -9,6 +9,7 @@
     "cyf": "cypress run --browser firefox",
     "cye": "cypress run --browser edge",
     "cy": "cypress run --record --key 663b7174-c681-4a4d-9350-bedc414fd8e4",
+    "api": "cypress run --spec '**/**/api/*.cy.js'",
     "smoke": "cypress run NO_COLOR=1 --browser chrome:stable --spec cypress/e2e/component/*.js",
     "prettier": "npx prettier --write ."
   },
