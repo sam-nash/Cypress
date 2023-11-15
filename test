@@ -1,0 +1,95 @@
+import yaml
+import re
+import json
+
+with open('config.json') as c:
+    config_data = json.load(c)
+
+
+def validate_yaml(yaml_file):
+    export_errors, variable_errors, assignment_errors = ([] for i in range(3))
+    commands_dict = {}
+    export_dict = {}
+
+    with open(yaml_file, 'r') as f:
+        yaml_data = yaml.safe_load(f)
+
+    if 'steps' in yaml_data:
+        for step_name, step_details in yaml_data['steps']['deploy_to_staging'].items():
+            # extract the commands of only the stage called prerequisites
+
+            if 'commands' in step_name:
+                # print(step_details)
+                # extract the variable names and values from the commands
+
+                for command in step_details:
+                    variable_name = command.split('=')[0].strip()
+                    variable_value = command.split('=')[1].strip()
+
+                    # add all cf export commands to a export_dict to verify later they are exported correctly
+                    if variable_name.startswith('cf_export'):
+                        export_dict[variable_name] = variable_value
+                        # print(export_dict)
+
+                    # ignore variable names that start exactly with cf_export;
+                    # for lines that start exactly with 'export' strip export and then & add to dict
+                    if not variable_name.startswith('cf_export'):
+                        if variable_name.startswith('export'):
+                            commands_dict[variable_name.strip(
+                                'export ')] = variable_value
+                        else:
+                            commands_dict[variable_name] = variable_value
+
+        # print(commands_dict)
+
+        # check if the variable_name from comands_dict exists in config_data else display an error
+        for variable_name, variable_value in commands_dict.items():
+            if variable_name not in config_data:
+                if checkVarInConfig(variable_name) is not None:
+                    variable_errors.append(
+                        f"Error: Unknown Variable {variable_name}. Did you mean {checkVarInConfig(variable_name)}")
+                else:
+                    variable_errors.append(
+                        f"Error: Unknown Variable {variable_name}")
+
+            else:
+                if config_data[variable_name] != variable_value:
+                    assignment_errors.append(
+                        f"Assignment Error: Variable {variable_name} is not set to the correct value {config_data[variable_name]}")
+            # if variable_name exists in config_data make sure the variable exists in export_dictionary in the format cf_export variable_name=`echo $variable_name`
+            if variable_name in config_data:
+                if f"cf_export {variable_name}" not in export_dict:
+                    export_errors.append(
+                        f"Export Error: Variable {variable_name} is not exported correctly. Please export it in the format cf_export {variable_name}=`echo $variable_name`")
+                else:
+                    if export_dict[f"cf_export {variable_name}"] != f"`echo ${variable_name}`":
+                        export_errors.append(
+                            f"Export Error: Variable {variable_name} is not exported correctly. Please export it in the format cf_export {variable_name}=`echo $variable_name`")
+
+    if export_errors or variable_errors or assignment_errors:
+        for verror in variable_errors:
+            print(verror)
+        for aerror in assignment_errors:
+            print(aerror)
+        for eerror in export_errors:
+            print(eerror)
+        return False
+    else:
+        return True
+
+
+def checkVarInConfig(variable_name):
+    # check if the same variable exists with a different format - lower,upper,sentence, camel or snake case in config_data
+    for config_variable_name in config_data:
+        if re.match(rf"^{variable_name}$", config_variable_name, re.IGNORECASE):
+            return str(config_variable_name)
+        else:
+            continue
+
+
+if __name__ == "__main__":
+    yaml_file = "your_yaml_file.yaml"
+    if validate_yaml(yaml_file):
+        print("\nYAML file is valid")
+    else:
+        print("\nYAML file is invalid\n")
