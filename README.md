@@ -152,6 +152,7 @@ For this, we perform the following :
 2. Capture the postResponse and verify the response with the postRequest.
 3. Send a getRequest to the getUser endpoint with the 'id' attribute in the url using the 'GET' method.
 4. Capture the getResponse and verify the response with the postRequest(without 'id').
+5. 
 
 Because we have to test if the api can accept all the different values, we send variations of the request like a different 'gender' and 'status'.
 The above test scenario can be broken up into 4 different test cases(scripts) by modifying the corresponding test data object
