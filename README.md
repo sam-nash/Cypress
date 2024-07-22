@@ -1,5 +1,7 @@
 # Cypress
 
+Examples of Cypress
+
 ## Installation and Running
 
 **Install**
